@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:component-scan base-package="ua.com.codefire.web.controller"/>
+    <context:component-scan base-package="org.pac4j.springframework.web"/>
+
+    <mvc:annotation-driven/>
+    <mvc:default-servlet-handler/>
+
+    <mvc:resources mapping="/assets/**" location="/assets/"/>
+
+    <mvc:view-resolvers>
+        <mvc:jsp prefix="/WEB-INF/views/" suffix=".jsp"/>
+    </mvc:view-resolvers>
+
+    <!-- OAuth2 -->
+
+    <bean id="googleClient" class="org.pac4j.oauth.client.Google2Client">
+        <property name="key" value="213708579497-19fg21gqdndo4k3vsags7aul7ah96npf.apps.googleusercontent.com"/>
+        <property name="secret" value="LA-1lI4NAj-2W0NfyuFBnRY4"/>
+    </bean>
+
+    <bean id="clients" class="org.pac4j.core.client.Clients">
+        <property name="callbackUrl" value="http://localhost:8081/callback"/>
+        <property name="clients">
+            <list>
+                <ref bean="googleClient"/>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="adminRoleAuthorizer" class="org.pac4j.core.authorization.RequireAnyRoleAuthorizer">
+        <constructor-arg name="roles" value="ROLE_ADMIN"/>
+    </bean>
+
+    <bean id="config" class="org.pac4j.core.config.Config">
+        <constructor-arg name="clients" ref="clients"/>
+        <constructor-arg name="authorizers">
+            <map>
+                <entry key="admin" value-ref="adminRoleAuthorizer"/>
+            </map>
+        </constructor-arg>
+    </bean>
+
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/*"/>
+            <mvc:exclude-mapping path="/" />
+            <mvc:exclude-mapping path="/callback" />
+            <bean class="org.pac4j.springframework.web.RequiresAuthenticationInterceptor">
+                <constructor-arg name="config" ref="config"/>
+                <constructor-arg name="clientName" value="Google2Client"/>
+
+                <!--<constructor-arg name="authorizerName" value="admin"/>-->
+            </bean>
+        </mvc:interceptor>
+    </mvc:interceptors>
+</beans>
